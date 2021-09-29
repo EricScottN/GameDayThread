@@ -28,7 +28,6 @@ def can_post(game):
     pretime = timedelta(hours=2)
     gametime_ordinal = datetime.fromisoformat(game['gameDate'][:-1]) - datetime.now().utcnow()
     if gametime_ordinal.total_seconds() <= 0:
-        print("Game has already started. Cannot Post Game Day Thread")
         return False
     while gametime_ordinal > pretime:
         min, sec = divmod((gametime_ordinal - pretime).seconds, 60)

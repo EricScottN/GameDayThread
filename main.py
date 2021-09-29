@@ -13,8 +13,16 @@ def main():
         print(f"No game today for {my_team['name']}")
         return
     gdt_post = find_gdt(my_team['name'], get_env('SUBREDDIT'))
-    if not gdt_post and can_post(game):
+    if not can_post(game):
+        print("Game has already started. Cannot Post Game Day Thread")
+        return
+    if not gdt_post:
         lineups, injuries = game_info(game)
+    if not lineups or not injuries:
+        print("There was a problem getting lineups and injuries")
+
+
+
 
 
 

@@ -23,8 +23,3 @@ def get_team(teams, abbv):
         else:
             print(f'Found {abbv}')
             return team
-
-
-class Team:
-    def __init__(self, team):
-        self.team = team

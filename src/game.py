@@ -6,6 +6,7 @@ from requests_html import HTMLSession
 from bs4 import BeautifulSoup
 import unidecode
 
+
 def get_today_games():
     eastern = pytz.timezone('US/Eastern')
     today = datetime.now(eastern).strftime('%Y-%m-%d')
