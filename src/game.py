@@ -6,6 +6,14 @@ from requests_html import HTMLSession
 from bs4 import BeautifulSoup
 import unidecode
 
+class NoGamesFoundError(Exception):
+
+    def __init__(self, team_name):
+        self.team_name = team_name
+
+    def __str__(self):
+        return f'Could not find games for {self.team_name}'
+
 
 def get_today_games():
     eastern = pytz.timezone('US/Eastern')
@@ -100,3 +108,17 @@ def scrape_injuries(teams):
     return injuries
 
 
+class GameInfo:
+    @staticmethod
+    def create_with_today_games_and_team(today_games, team):
+        game = next((game for game in today_games if game['teams']['away']['team']['id'] == team['id'] or
+                     game['teams']['home']['team']['id'] == team['id']), None)
+        if not game:
+            raise NoGamesFoundError(team_name=team['name'])
+        return game
+
+
+    def __init__(self, today_games, team):
+        self.today_games = today_games
+        self.team = team
+        self.game_info = self.create_with_today_games_and_team(today_games=today_games, team=team)
