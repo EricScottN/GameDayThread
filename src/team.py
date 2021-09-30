@@ -30,7 +30,7 @@ def get_team(teams, abbv):
 class TeamInfo:
 
     @staticmethod
-    def get_my_team(abbv, teams):
+    def get_team_by_abbv(abbv, teams):
         while True:
             team = next((team for team in teams if team['abbreviation'] == abbv), None)
             if not team:
@@ -40,6 +40,6 @@ class TeamInfo:
                 return team
 
     def __init__(self, abbv, teams):
-        self.team = self.get_my_team(abbv=abbv, teams=teams)
+        self.team = self.get_team_by_abbv(abbv=abbv, teams=teams)
         self.data = None
 

@@ -7,7 +7,7 @@ from src.setup import get_env
 def main():
     teams = get_all_teams()
     today_games = get_today_games()
-    team = TeamInfo.get_my_team(get_env('MY_TEAM'), teams)
+    team = TeamInfo.get_team_by_abbv(get_env('MY_TEAM'), teams)
     game_data = GameInfo.create_with_today_games_and_team(today_games, team)
     # TODO get both teams info (away_team, home_team) and store them in instances of Team
     # TODO: get pregame data - Will need from:
