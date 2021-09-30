@@ -5,6 +5,7 @@ import requests
 from requests_html import HTMLSession
 from bs4 import BeautifulSoup
 import unidecode
+from src.team import TeamInfo
 
 class NoGamesFoundError(Exception):
 
@@ -35,12 +36,12 @@ def get_game_by_team_id(games, my_team):
                  game['teams']['home']['team']['id'] == my_team['id']), None)
     return game
 
-def game_info(game):
-    teams = [unidecode.unidecode(game['teams']['home']['team']['name']),
-             unidecode.unidecode(game['teams']['away']['team']['name'])]
-    lineups = scrape_lineups(teams)
-    injuries = scrape_injuries(teams)
-    return lineups, injuries
+# def game_info(game):
+#     teams = [unidecode.unidecode(game['teams']['home']['team']['name']),
+#              unidecode.unidecode(game['teams']['away']['team']['name'])]
+#     lineups = scrape_lineups(teams)
+#     injuries = scrape_injuries(teams)
+#     return lineups, injuries
 
 
 def scrape_lineups(teams):
@@ -108,17 +109,22 @@ def scrape_injuries(teams):
     return injuries
 
 
-class GameInfo:
-    @staticmethod
-    def create_with_today_games_and_team(today_games, team):
-        game = next((game for game in today_games if game['teams']['away']['team']['id'] == team['id'] or
+class GameInfo():
+
+    def __init__(self, game_info=None):
+        self.game_info = game_info
+        self.away_team = None
+        self.home_team = None
+
+    @classmethod
+    def create_with_games_and_team(cls, games, team):
+        game_info = next((game for game in games if game['teams']['away']['team']['id'] == team['id'] or
                      game['teams']['home']['team']['id'] == team['id']), None)
-        if not game:
+        if not game_info:
             raise NoGamesFoundError(team_name=team['name'])
-        return game
+        return cls(game_info=game_info)
 
 
-    def __init__(self, today_games, team):
-        self.today_games = today_games
-        self.team = team
-        self.game_info = self.create_with_today_games_and_team(today_games=today_games, team=team)
+
+
+
