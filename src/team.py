@@ -29,17 +29,18 @@ def get_team(teams, abbv):
 
 class TeamInfo:
 
-    @staticmethod
-    def get_team_by_abbv(abbv, teams):
+    def __init__(self, teams, abbv=None, team=None):
+        self.teams = teams
+        self.abbv = abbv
+        self.team = team
+        self.data = None
+
+    @classmethod
+    def get_team_by_abbv(cls, teams, abbv):
         while True:
             team = next((team for team in teams if team['abbreviation'] == abbv), None)
             if not team:
                 abbv = input(f"Unable to locate abbreviation {abbv} - Enter team abbv: ")
             else:
                 print(f'Found {abbv}')
-                return team
-
-    def __init__(self, abbv, teams):
-        self.team = self.get_team_by_abbv(abbv=abbv, teams=teams)
-        self.data = None
-
+                return cls(teams, abbv, team)
