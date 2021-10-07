@@ -1,6 +1,6 @@
-from src.team import get_all_teams, get_team, TeamInfo
+from src.team import get_all_teams, TeamInfo
 from src.game import get_today_games, get_game_by_team_id, GameInfo
-from src.gdt_post import find_gdt, can_post
+from src.gdt_post import find_gdt, can_post, generate_markdown_for_gdt
 from src.setup import get_env
 
 
@@ -9,6 +9,13 @@ def main():
     today_games = get_today_games()
     team = TeamInfo.get_team_by_abbv(get_env('MY_TEAM'), teams)
     game = GameInfo.create_with_games_and_team(today_games, team.team_info)
+    [obj.convert_team_name_to_text() for obj in [game.away_team, game.home_team]]
+    [obj.get_team_stats_by_team_id() for obj in [game.away_team, game.home_team]]
+    [obj.scrape_lineups() for obj in [game.away_team, game.home_team]]
+    [obj.scrape_injuries() for obj in [game.away_team, game.home_team]]
+    game.get_game_content()
+    markdown = generate_markdown_for_gdt(game)
+
     print(game)
     # TODO get both teams info (away_team, home_team) and store them in instances of Team
     # TODO: get pregame data - Will need from:
