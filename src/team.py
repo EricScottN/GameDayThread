@@ -92,12 +92,11 @@ class TeamInfo:
         for row in rows:
             line = row.attrs['id']
             if line not in players[position]:
-                players[position].update({line: {}})
+                players[position].update({line: []})
                 for content in row.contents:
                     if content != '\n' and 'id' in content.attrs:
-                        pos = content.attrs['id']
                         name = content.find('span', attrs={'class': 'player-name'})
-                        players[position][line].update({pos: name.text})
+                        players[position][line].append(name.text)
         return players
 
     def scrape_injuries(self):

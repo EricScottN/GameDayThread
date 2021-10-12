@@ -5,7 +5,7 @@ import pytz
 utc = pytz.timezone('UTC')
 eastern = pytz.timezone('US/Eastern')
 
-teams = {'SEA': ['/r/seattlekraken', 'Seattle, Kraken'],
+teams = {'SEA': ['/r/seattlekraken', 'Seattle', 'Kraken'],
          'VGK': ['/r/goldenknights', 'Vegas', 'Golden Knights'],
          'MIN': ['/r/wildhockey', 'Minnesota', 'Wild'], 'TOR': ['/r/leafs', 'Toronto', 'Leafs'],
          'WSH': ['/r/caps', 'Washington', 'Capitals'], 'BOS': ['/r/bostonbruins', 'Boston', 'Bruins'],
@@ -72,8 +72,106 @@ def can_post(game):
         return True
 
 
-def generate_markdown_for_gdt(game_info):
-    away_team_info = game_info.away_team.team_info
-    away_team_stats = game_info.away_team.team_stats
-    header_one = f"#{away_team_info['name']} []{teams[away_team_info['abbreviation']][0]} " \
-                 f"()"
+def generate_markdown_for_gdt(game):
+    game_info = game.game_info
+    away_team_info = game.away_team.team_info
+    away_team_stats = game.away_team.team_stats
+    away_team_lineup = game.away_team.lineups
+    away_team_injuries = game.away_team.injuries
+    home_team_info = game.home_team.team_info
+    home_team_stats = game.home_team.team_stats
+    home_team_linup = game.home_team.lineups
+    home_team_injuries = game.home_team.injuries
+    header = f"#{away_team_info['name']} []({teams[away_team_info['abbreviation']][0]})" \
+             f"({away_team_stats[0]['splits'][0]['stat']['wins']}-" \
+             f"{away_team_stats[0]['splits'][0]['stat']['losses']}-" \
+             f"{away_team_stats[0]['splits'][0]['stat']['ot']}) at " \
+             f"{home_team_info['name']} []({teams[home_team_info['abbreviation']][0]})" \
+             f"({home_team_stats[0]['splits'][0]['stat']['wins']}-" \
+             f"{home_team_stats[0]['splits'][0]['stat']['losses']}-" \
+             f"{home_team_stats[0]['splits'][0]['stat']['ot']})" \
+
+    time = datetime.fromisoformat(game_info['gameDate'][:-1])
+    utc_time = pytz.utc.localize(time, is_dst=None)
+    at_time = utc_time.astimezone(pytz.timezone('Canada/Atlantic'))
+    et_time = utc_time.astimezone(pytz.timezone('US/Eastern'))
+    ct_time = utc_time.astimezone(pytz.timezone("US/Central"))
+    mt_time = utc_time.astimezone(pytz.timezone('US/Mountain'))
+    pt_time = utc_time.astimezone(pytz.timezone('US/Pacific'))
+
+    time_table = f"##Time\n" \
+                 f"|PT|MT|CT|ET|AT|\n" \
+                 f"|:--:|:--:|:--:|:--:|:--:|\n" \
+                 f"|{pt_time:%I:%M%p}|{mt_time:%I:%M%p}|{ct_time:%I:%M%p}|{et_time:%I:%M%p}|{at_time:%I:%M%p}|"
+
+    venue_table = f"##Location\n" \
+                  f"|Venue|\n" \
+                  f"|:--:|\n" \
+                  f"|**{game_info['venue']['name']}**|"
+
+    lineup_table = f"##Projected Lineups\n" \
+                   f"*lines combos scraped from Daily Faceoff and may not be 100% accurate*\n\n" \
+                   f"###Forwards\n\n" \
+                   f"||LW|C|RW||LW|C|RW|\n" \
+                   f"|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|\n"
+
+    for (away_line, away_players), (home_line, home_players) in \
+            zip(away_team_lineup['forwards'].items(), home_team_linup['forwards'].items()):
+        lineup_table += f"|[]({teams[away_team_info['abbreviation']][0]})|" \
+                        f"{away_players[0]}|" \
+                        f"{away_players[1]}|" \
+                        f"{away_players[2]}|" \
+                        f"[]({teams[home_team_info['abbreviation']][0]})|" \
+                        f"{home_players[0]}|" \
+                        f"{home_players[1]}|" \
+                        f"{home_players[2]}|\n"
+
+    lineup_table += "###Defensemen\n\n" \
+                    f"||LD|RD||LD|RD|\n" \
+                    f"|:--:|:--:|:--:|:--:|:--:|:--:|\n"
+
+    for (away_line, away_players), (home_line, home_players) in \
+            zip(away_team_lineup['defense'].items(), home_team_linup['defense'].items()):
+        lineup_table += f"|[]({teams[away_team_info['abbreviation']][0]})|" \
+                        f"{away_players[0]}|" \
+                        f"{away_players[1]}|" \
+                        f"[]({teams[home_team_info['abbreviation']][0]})|" \
+                        f"{home_players[0]}|" \
+                        f"{home_players[1]}|\n"
+
+    lineup_table += "###Goalies\n\n" \
+                    f"||Starter|Backup||Starter|Backup|\n" \
+                    f"|:--:|:--:|:--:|:--:|:--:|:--:|\n"
+
+    for (away_line, away_players), (home_line, home_players) in \
+            zip(away_team_lineup['goalie_list'].items(), home_team_linup['goalie_list'].items()):
+        lineup_table += f"|[]({teams[away_team_info['abbreviation']][0]})|" \
+                        f"{away_players[0]}|" \
+                        f"{away_players[1]}|" \
+                        f"[]({teams[home_team_info['abbreviation']][0]})|" \
+                        f"{home_players[0]}|" \
+                        f"{home_players[1]}|\n\n"
+
+    injury_table = f"##Injuries\n" \
+                   f"||Player|Date|Status|Details|\n" \
+                   f"|:--:|:--:|:--:|:--:|:--:|\n"
+
+    for player in away_team_injuries:
+        injury_table += f"|[]({teams[away_team_info['abbreviation']][0]})|" \
+                        f"{player['Player']}|" \
+                        f"{player['Date']}|" \
+                        f"{player['Status']}|" \
+                        f"{player['Details']}|\n" \
+
+    injury_table += "|-|-|-|-|-|"
+
+    for player in home_team_injuries:
+        injury_table += f"|[]({teams[home_team_info['abbreviation']][0]})|" \
+                        f"{player['Player']}|" \
+                        f"{player['Date']}|" \
+                        f"{player['Status']}|" \
+                        f"{player['Details']}|\n" \
+
+    all_text = [header, time_table, venue_table, lineup_table, injury_table]
+
+    print("\n".join(all_text))
