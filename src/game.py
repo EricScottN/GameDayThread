@@ -39,12 +39,14 @@ def get_game_by_team_id(games, my_team):
 
 class GameInfo():
 
-    def __init__(self, game_info=None, away_team=None, home_team=None, game_content=None):
+    def __init__(self, game_info=None, away_team=None, home_team=None, gdt_post=None, game_content=None):
         self.game_info = game_info
         self.away_team = away_team
         self.home_team = home_team
         self.game_content = game_content
+        self.gdt_post = gdt_post
         self.final = False
+
 
     @classmethod
     def create_with_games_and_team(cls, games, team):
@@ -65,7 +67,8 @@ class GameInfo():
         if not game_content:
             raise Exception(f'Unable to return games from {url}')
         else:
-            self.game_content=game_content
+            self.game_content = game_content
+
 
 
 

@@ -4,9 +4,14 @@ import time
 import pytz
 import requests
 import html
+from src.setup import Reddit, get_env
 
 utc = pytz.timezone('UTC')
 eastern = pytz.timezone('US/Eastern')
+
+r = Reddit().reddit
+user = r.redditor(r.user.me().name)
+subreddit = r.subreddit(get_env('SUBREDDIT'))
 
 teams = {'SEA': ['/r/seattlekraken', 'Seattle', 'Kraken'],
          'VGK': ['/r/goldenknights', 'Vegas', 'Golden Knights'],
@@ -43,16 +48,13 @@ convert = {'Vegas Golden Knights': 'VGK', 'San Jose Sharks': 'SJS', 'Detroit Red
            'Philadelphia Flyers': 'PHI', 'Seattle Kraken': 'SEA'}
 
 
-def find_gdt(team_name, subreddit):
-    from src.setup import Reddit
-    r = Reddit().reddit
+def find_gdt(team_name):
     gdt_post = None
-    user = r.redditor(r.user.me().name)
     posts = [x for x in user.submissions.new(limit=20)]
     for post in posts:
         made = utc.localize(datetime.utcfromtimestamp(post.created_utc)).astimezone(eastern)
         # If "Game Thread" and my_team in post title and subreddit is hockey and date made is today
-        if team_name in post.title and 'Game Thread' in post.title \
+        if team_name in post.title and 'Game' in post.title and 'Thread' in post.title \
                 and post.subreddit.display_name.lower() == subreddit \
                 and made.strftime('%d%m%Y') == datetime.now(eastern).strftime('%d%m%Y'):
             print(f'Game Day Thread Found - {post.title}')
@@ -93,18 +95,44 @@ def generate_markdown_for_gdt(game):
     mt_time = utc_time.astimezone(pytz.timezone('US/Mountain'))
     pt_time = utc_time.astimezone(pytz.timezone('US/Pacific'))
     home_team_time = utc_time.astimezone(pytz.timezone(home_team_info['venue']['timeZone']['id']))
+    all_text = []
 
-    title = f"{away_team_info['name']} " \
-             f"({away_team_stats[0]['splits'][0]['stat']['wins']}-" \
-             f"{away_team_stats[0]['splits'][0]['stat']['losses']}-" \
-             f"{away_team_stats[0]['splits'][0]['stat']['ot']}) at " \
-             f"{home_team_info['name']} " \
-             f"({home_team_stats[0]['splits'][0]['stat']['wins']}-" \
-             f"{home_team_stats[0]['splits'][0]['stat']['losses']}-" \
-             f"{home_team_stats[0]['splits'][0]['stat']['ot']}) - " \
-             f"{home_team_time:%d %b %Y - %I:%M%p} {home_team_info['venue']['timeZone']['tz']}"
+    # TODO Add Preseason Thread and Playoff Thread
+    all_text.append(construct_title(away_team_info, away_team_stats, home_team_info, home_team_stats, home_team_time))
+    all_text.append(construct_header(away_team_info, away_team_stats, home_team_info, home_team_stats))
+    all_text.append(construct_update())
+    all_text.append(construct_time_table(at_time, ct_time, et_time, mt_time, pt_time))
+    all_text.append(construct_venue_table(game_info))
+    all_text.append(construct_lineup_table(away_team_info, away_team_lineup, home_team_info, home_team_linup))
+    all_text.append(construct_injuries_table(away_team_info, away_team_injuries, home_team_info, home_team_injuries))
+    all_text.append(construct_sub_table(away_team_info, home_team_info))
+    all_text.append(construct_notes())
+
+    textfile = open("gdt_post_markdown.txt", "w")
+
+    for element in all_text:
+        textfile.write(element + "\n")
+
+    textfile.close()
+    return all_text
 
 
+def construct_title(away_team_info, away_team_stats, home_team_info, home_team_stats, home_team_time):
+    title = f"Game Day Thread: " \
+            f"{away_team_info['name']} " \
+            f"({away_team_stats[0]['splits'][0]['stat']['wins']}-" \
+            f"{away_team_stats[0]['splits'][0]['stat']['losses']}-" \
+            f"{away_team_stats[0]['splits'][0]['stat']['ot']}) at " \
+            f"{home_team_info['name']} " \
+            f"({home_team_stats[0]['splits'][0]['stat']['wins']}-" \
+            f"{home_team_stats[0]['splits'][0]['stat']['losses']}-" \
+            f"{home_team_stats[0]['splits'][0]['stat']['ot']}) - " \
+            f"{home_team_time:%d %b %Y - %I:%M%p} {home_team_info['venue']['timeZone']['tz']}"
+
+    return title
+
+
+def construct_header(away_team_info, away_team_stats, home_team_info, home_team_stats):
     header = f"#{away_team_info['name']} []({teams[away_team_info['abbreviation']][0]})" \
              f"({away_team_stats[0]['splits'][0]['stat']['wins']}-" \
              f"{away_team_stats[0]['splits'][0]['stat']['losses']}-" \
@@ -112,19 +140,33 @@ def generate_markdown_for_gdt(game):
              f"{home_team_info['name']} []({teams[home_team_info['abbreviation']][0]})" \
              f"({home_team_stats[0]['splits'][0]['stat']['wins']}-" \
              f"{home_team_stats[0]['splits'][0]['stat']['losses']}-" \
-             f"{home_team_stats[0]['splits'][0]['stat']['ot']})" \
-             f"\n\n***\n\n***\n"
+             f"{home_team_stats[0]['splits'][0]['stat']['ot']})"
 
+    return header
+
+
+def construct_update():
+    return f"\n\n***\n\n***\n"
+
+
+def construct_time_table(at_time, ct_time, et_time, mt_time, pt_time):
     time_table = f"##Time\n" \
                  f"|PT|MT|CT|ET|AT|\n" \
                  f"|:--:|:--:|:--:|:--:|:--:|\n" \
                  f"|{pt_time:%I:%M%p}|{mt_time:%I:%M%p}|{ct_time:%I:%M%p}|{et_time:%I:%M%p}|{at_time:%I:%M%p}|"
+    return time_table
 
+
+def construct_venue_table(game_info):
     venue_table = f"##Location\n" \
                   f"|Venue|\n" \
                   f"|:--:|\n" \
                   f"|**{game_info['venue']['name']}**|"
 
+    return venue_table
+
+
+def construct_lineup_table(away_team_info, away_team_lineup, home_team_info, home_team_linup):
     lineup_table = f"##Projected Lineups\n" \
                    f"*lines combos scraped from Daily Faceoff and may not be 100% accurate*\n\n" \
                    f"###Forwards\n\n" \
@@ -166,8 +208,12 @@ def generate_markdown_for_gdt(game):
                         f"{away_players[1]}|" \
                         f"[]({teams[home_team_info['abbreviation']][0]})|" \
                         f"{home_players[0]}|" \
-                        f"{home_players[1]}|\n\n"
+                        f"{home_players[1]}|\n"
 
+    return lineup_table
+
+
+def construct_injuries_table(away_team_info, away_team_injuries, home_team_info, home_team_injuries):
     injury_table = f"##Injuries\n" \
                    f"||Player|Date|Status|Details|\n" \
                    f"|:--:|:--:|:--:|:--:|:--:|\n"
@@ -177,36 +223,64 @@ def generate_markdown_for_gdt(game):
                         f"{player['Player']}|" \
                         f"{player['Date']}|" \
                         f"{player['Status']}|" \
-                        f"{player['Details']}|\n" \
+                        f"{player['Details']}|\n"
 
     injury_table += "|-|-|-|-|-|"
-
     for player in home_team_injuries:
         injury_table += f"|[]({teams[home_team_info['abbreviation']][0]})|" \
                         f"{player['Player']}|" \
                         f"{player['Date']}|" \
                         f"{player['Status']}|" \
-                        f"{player['Details']}|\n" \
+                        f"{player['Details']}|\n"
 
+    return injury_table
+
+
+def construct_sub_table(away_team_info, home_team_info):
     sub_table = f'##Subscribe\n' \
                 f'|Team Subreddits|\n' \
                 f'|:--:|:--:|\n' \
                 f"|{teams[away_team_info['abbreviation']][0]} {teams[home_team_info['abbreviation']][0]}\n" \
                 f'|[RedditHockey Discord](https://discord.gg/reddithockey)|'
+    return sub_table
 
-    all_text = [title, header, time_table, venue_table, lineup_table, injury_table, sub_table]
 
+def construct_notes():
+    notes_table = f'##Thread Notes\n' \
+                  f'* Trash talk is fun - but keep it civil\n' \
+                  f'* Everything in this thread is automated and always a work in progress\n' \
+                  f'* [Send me suggestions for improvements](https://www.reddit.com/user/airvvic/)'
+    return notes_table
 
-    textfile = open("gdt_post_markdown.txt", "w")
-
-    for element in all_text:
-        textfile.write(element + "\n")
-
-    textfile.close()
-    return all_text
 
 def post_gdt(markdown):
-    pass
+    try:
+        submission = subreddit.submit(title=markdown.pop(0), selftext='\n'.join([section for section in markdown]),
+                                      send_replies=False)
+        return submission
+    except Exception as e:
+        print(f"Couldn't submit post: {e}")
+        return None
+
+
+def comment_all_tables(submission, markdown):
+    try:
+        comment = submission.reply(body='\n'.join([section for section in markdown[2:-1]]))
+        return comment
+    except Exception as e:
+        print(f"Couldn't comment all tables: {e}")
+        return None
+
+
+def update_gdt_with_comment(submission, comment, markdown):
+    try:
+        markdown.insert(1, f'[comment with all tables]({comment.permalink})')
+        submission = submission.edit(body='\n'.join([section for section in markdown]))
+        return submission
+    except Exception as e:
+        print(f"Couldn't update post with comment to all tables: {e}")
+        return None
+
 
 def update_gdt(game):
     url = f"https://statsapi.web.nhl.com{game.game_info['link']}"
@@ -216,8 +290,8 @@ def update_gdt(game):
 
     time = data['liveData']['linescore']['currentPeriodTimeRemaining']
     ordinal = data['liveData']['linescore']['currentPeriodOrdinal']
-    game.game_info['time'] = f'{ordinal} {time}'
     period = data['liveData']['linescore']['currentPeriod']
+    game.game_info['time'] = None
     if period == 0 or f'{ordinal} {time}' == '1st 20:00':
         print('No updates')
         game.game_info['time'] = f'{ordinal} {time}'
@@ -372,7 +446,7 @@ def update_gdt(game):
                                                         penalty['result']['penaltyMinutes'],
                                                         penalty['result']['description'].replace(u'\xe9', 'e')])
                 else:
-                    penaltyDict[penalty['about']['ordinalNum']].append([penalty['about']['periodTime'], self.teams[
+                    penaltyDict[penalty['about']['ordinalNum']].append([penalty['about']['periodTime'], teams[
                         convert[penalty['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
                                                                         penalty['result']['penaltySeverity'],
                                                                         penalty['result']['penaltyMinutes'],
@@ -387,16 +461,14 @@ def update_gdt(game):
 
             penaltyTable += '\n\n'
 
-
             tables = f'***\n\n{timeTable}\n###Boxscore\n{boxscore}###Goals\n{goalTable}###Team Stats\n{teamStats}' \
                      f'###Penalties\n{penaltyTable}***'
 
             print(tables)
             now = datetime.now()
             print(now.strftime('%I:%M%p') + ' - Updating thread...')
-            op = game['thread'].selftext.split('***')
-            game['thread'] = game['thread'].edit(html.unescape(op[0] + tables + op[2]))
-
+            op = game.gdt_post.selftext.split('***')
+            game.gdt_post = game.gdt_post.edit(html.unescape(op[0] + tables + op[2]))
 
         if time == 'Final':
             game.final = True
