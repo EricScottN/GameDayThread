@@ -1,8 +1,14 @@
 import os
+import argparse
 import praw
 from dotenv import load_dotenv
 
 load_dotenv()
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-t", "--title", type=str, help='append message to gdt title')
+parser.add_argument("-po", "--post_override", type=bool, default=False)
+args = parser.parse_args()
 
 class Reddit:
     def __init__(self):

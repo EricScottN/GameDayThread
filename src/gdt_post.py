@@ -4,7 +4,7 @@ import time
 import pytz
 import requests
 import html
-from src.setup import Reddit, get_env
+from src.setup import Reddit, get_env, args
 
 utc = pytz.timezone('UTC')
 eastern = pytz.timezone('US/Eastern')
@@ -127,6 +127,8 @@ def construct_title(away_team_info, away_team_stats, home_team_info, home_team_s
             f"{home_team_stats[0]['splits'][0]['stat']['losses']}-" \
             f"{home_team_stats[0]['splits'][0]['stat']['ot']}) - " \
             f"{home_team_time:%d %b %Y - %I:%M%p} {home_team_info['venue']['timeZone']['tz']}"
+    if args.title:
+        title += f' - {args.title}'
 
     return title
 
