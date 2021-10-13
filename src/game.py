@@ -44,6 +44,7 @@ class GameInfo():
         self.away_team = away_team
         self.home_team = home_team
         self.game_content = game_content
+        self.final = False
 
     @classmethod
     def create_with_games_and_team(cls, games, team):
