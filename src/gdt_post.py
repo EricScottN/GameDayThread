@@ -100,19 +100,18 @@ def generate_markdown_for_gdt(game):
     # TODO Add Preseason Thread and Playoff Thread
     all_text.append(construct_title(away_team_info, away_team_stats, home_team_info, home_team_stats, home_team_time))
     all_text.append(construct_header(away_team_info, away_team_stats, home_team_info, home_team_stats))
-    all_text.append(construct_update())
+    all_text.append(construct_split())
     all_text.append(construct_time_table(at_time, ct_time, et_time, mt_time, pt_time))
     all_text.append(construct_venue_table(game_info))
     all_text.append(construct_lineup_table(away_team_info, away_team_lineup, home_team_info, home_team_linup))
     all_text.append(construct_injuries_table(away_team_info, away_team_injuries, home_team_info, home_team_injuries))
+    all_text.append(construct_split())
     all_text.append(construct_sub_table(away_team_info, home_team_info))
     all_text.append(construct_notes())
 
     textfile = open("gdt_post_markdown.txt", "w")
-
     for element in all_text:
         textfile.write(element + "\n")
-
     textfile.close()
     return all_text
 
@@ -145,8 +144,8 @@ def construct_header(away_team_info, away_team_stats, home_team_info, home_team_
     return header
 
 
-def construct_update():
-    return f"\n\n***\n\n***\n"
+def construct_split():
+    return f"\n***\n"
 
 
 def construct_time_table(at_time, ct_time, et_time, mt_time, pt_time):
@@ -241,7 +240,8 @@ def construct_sub_table(away_team_info, home_team_info):
                 f'|Team Subreddits|\n' \
                 f'|:--:|:--:|\n' \
                 f"|{teams[away_team_info['abbreviation']][0]} {teams[home_team_info['abbreviation']][0]}\n" \
-                f'|[RedditHockey Discord](https://discord.gg/reddithockey)|'
+                f'|[RedditHockey Discord](https://discord.gg/reddithockey)|' \
+
     return sub_table
 
 
@@ -265,7 +265,7 @@ def post_gdt(markdown):
 
 def comment_all_tables(submission, markdown):
     try:
-        comment = submission.reply(body='\n'.join([section for section in markdown[2:-1]]))
+        comment = submission.reply(body='\n'.join([section for section in markdown[2:-1] if "***" not in section]))
         return comment
     except Exception as e:
         print(f"Couldn't comment all tables: {e}")
@@ -371,7 +371,7 @@ def update_gdt(game):
             homeStats = data['liveData']['boxscore']['teams']['home']['teamStats']['teamSkaterStats']
             awayStats = data['liveData']['boxscore']['teams']['away']['teamStats']['teamSkaterStats']
             teamStats = '|Team|Shots|Hits|Blocked|FO Wins|Giveaways|Takeaways|Power ' \
-                        'Plays|\n|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|\n '
+                        'Plays|\n|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|\n'
             teamStats += f"|[]({awayTeam})|{awayStats['shots']}|{awayStats['hits']}|{awayStats['blocked']}" \
                          f"|{awayStats['faceOffWinPercentage']}%|{awayStats['giveaways']}" \
                          f"|{awayStats['takeaways']}|{str(int(awayStats['powerPlayGoals']))}" \
