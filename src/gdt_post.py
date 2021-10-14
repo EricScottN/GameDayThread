@@ -142,7 +142,7 @@ def construct_header(away_team_info, away_team_stats, home_team_info, home_team_
 
 
 def construct_split():
-    return f"\n***\n"
+    return f"***\n"
 
 
 def construct_time_table(at_time, ct_time, et_time, mt_time, pt_time):
@@ -296,6 +296,7 @@ def update_gdt(game):
         if f'{ordinal} {time}' == game.game_info.get('time'):
             print('No updates')
         else:
+
             time_table = create_time_clock(game, ordinal, time)
 
             home_team = teams[data['gameData']['teams']['home']['abbreviation']][0]
@@ -306,7 +307,7 @@ def update_gdt(game):
 
             # Team Stats
             print('Creating team stats...')
-            teamStats = construct_team_stats(away_team, data, home_team)
+            team_stats = construct_team_stats(away_team, data, home_team)
 
 
             # Goals
@@ -317,7 +318,8 @@ def update_gdt(game):
             print('Creating penalty table...')
             penalty_table = construct_penalty_table(all_plays, data, period)
 
-            tables = f'***\n\n{time_table}\n###Boxscore\n{boxscore}###Goals\n{goal_table}###Team Stats\n{teamStats}' \
+            all_text =[time_table, boxscore, goal_table, team_stats, penalty_table]
+            tables = f'***\n\n{time_table}\n###Boxscore\n{boxscore}###Goals\n{goal_table}###Team Stats\n{team_stats}' \
                      f'###Penalties\n{penalty_table}***'
 
             now = datetime.now()
