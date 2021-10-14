@@ -30,6 +30,8 @@ def main():
     while not game.final:
         update_gdt(game)
         time.sleep(60)
+    else:
+        print("Game Ended")
 
 
 if __name__ == '__main__':
