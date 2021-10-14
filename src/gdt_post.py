@@ -290,17 +290,16 @@ def update_gdt(game):
     data = json.loads(w.content)
     w.close()
 
-    time = data['liveData']['linescore']['currentPeriodTimeRemaining']
-    ordinal = data['liveData']['linescore']['currentPeriodOrdinal']
+
     period = data['liveData']['linescore']['currentPeriod']
-    game.game_info['time'] = None
-    if period == 0 or f'{ordinal} {time}' == '1st 20:00':
+    linescore = data['liveData']['linescore']
+    time = linescore.get('currentPeriodTimeRemaining')
+    if period == 0 or not time:
         print('No updates')
-        game.game_info['time'] = f'{ordinal} {time}'
     else:
         time = data['liveData']['linescore']['currentPeriodTimeRemaining']
         ordinal = data['liveData']['linescore']['currentPeriodOrdinal']
-        if f'{ordinal} {time}' == game.game_info['time']:
+        if f'{ordinal} {time}' == game.game_info.get('time'):
             print('No updates')
         else:
             game.game_info['time'] = f'{ordinal} {time}'
@@ -466,7 +465,6 @@ def update_gdt(game):
             tables = f'***\n\n{timeTable}\n###Boxscore\n{boxscore}###Goals\n{goalTable}###Team Stats\n{teamStats}' \
                      f'###Penalties\n{penaltyTable}***'
 
-            print(tables)
             now = datetime.now()
             print(now.strftime('%I:%M%p') + ' - Updating thread...')
             op = game.gdt_post.selftext.split('***')
