@@ -99,7 +99,7 @@ def generate_markdown_for_gdt(game):
     all_text = []
 
     # TODO Add Preseason Thread and Playoff Thread
-    all_text.append(construct_title(away_team_info, away_team_stats, home_team_info, home_team_stats, home_team_time))
+    all_text.append(construct_title(away_team_info, home_team_info, home_team_time))
     all_text.append(construct_header(away_team_info, away_team_stats, home_team_info, home_team_stats))
     all_text.append(construct_split())
     all_text.append(construct_time_table(at_time, ct_time, et_time, mt_time, pt_time))
@@ -237,7 +237,7 @@ def construct_sub_table(away_team_info, home_team_info):
                 f'|Team Subreddits|\n' \
                 f'|:--:|:--:|\n' \
                 f"|{teams[away_team_info['abbreviation']][0]} {teams[home_team_info['abbreviation']][0]}\n" \
-                f'|[RedditHockey Discord](https://discord.gg/reddithockey)|' \
+                f'|[RedditHockey Discord](https://discord.gg/reddithockey)|'
 
     return sub_table
 
@@ -285,7 +285,6 @@ def update_gdt(game):
     data = json.loads(w.content)
     w.close()
 
-
     period = data['liveData']['linescore']['currentPeriod']
     linescore = data['liveData']['linescore']
     time = linescore.get('currentPeriodTimeRemaining')
@@ -297,168 +296,29 @@ def update_gdt(game):
         if f'{ordinal} {time}' == game.game_info.get('time'):
             print('No updates')
         else:
-            game.game_info['time'] = f'{ordinal} {time}'
-            print('Creating time table...')
-            if time == 'Final':
-                timeTable = '|Time Clock|\n|:--:|\n|FINAL|\n\n'
-            else:
-                timeTable = f'|Time Clock|\n|:--:|\n|{ordinal} - {time}|\n\n'
+            time_table = create_time_clock(game, ordinal, time)
 
-            homeTeam = teams[data['gameData']['teams']['home']['abbreviation']][0]
-            awayTeam = teams[data['gameData']['teams']['away']['abbreviation']][0]
+            home_team = teams[data['gameData']['teams']['home']['abbreviation']][0]
+            away_team = teams[data['gameData']['teams']['away']['abbreviation']][0]
 
             print('Creating boxscore...')
-            boxscore = '|Teams|1st|2nd|3rd|'
-
-            if data['gameData']['game']['type'] in ['R', 'PR']:
-                if period == 4:
-                    boxscore += 'OT|Total|\n|:--:|:--:|:--:|:--:|:--:|:--:|\n'
-                elif period == 5:
-                    boxscore += 'OT|SO|Total|\n|:--:|:--:|:--:|:--:|:--:|:--:|:--:|\n'
-                else:
-                    boxscore += 'Total|\n|:--:|:--:|:--:|:--:|:--:|\n'
-            elif data['gameData']['game']['type'] == 'P':
-                for x in range(0, (period - 3)):
-                    boxscore += f'OT{x + 1}|'
-                boxscore += 'Total|\n|:--:|:--:|:--:|:--:|'
-                for x in range(0, period - 3):
-                    boxscore += ':--:|'
-                boxscore += ':--:|\n'
-
-            homeTotal = data['liveData']['linescore']['teams']['home']['goals']
-            awayTotal = data['liveData']['linescore']['teams']['away']['goals']
-            scoreDict = {}
-
-            OT = 1
-            for x in data['liveData']['linescore']['periods']:
-                score = [x['away']['goals'], x['home']['goals']]
-                if (data['gameData']['game']['type'] == 'P') and ('OT' in x['ordinalNum']) and (period > 4):
-                    scoreDict['OT' + str(OT)] = score
-                    OT += 1
-                else:
-                    scoreDict[x['ordinalNum']] = score
-
-            if period == 1:
-                scoreDict['2nd'] = ['--', '--']
-                scoreDict['3rd'] = ['--', '--']
-            elif period == 2:
-                scoreDict['3rd'] = ['--', '--']
-
-            if data['liveData']['linescore']['hasShootout']:
-                awaySO = data['liveData']['linescore']['shootoutInfo']['away']['scores']
-                homeSO = data['liveData']['linescore']['shootoutInfo']['home']['scores']
-                if awaySO > homeSO:
-                    scoreDict['SO'] = [1, 0]
-                else:
-                    scoreDict['SO'] = [0, 1]
-
-            boxscore += f'|[]({awayTeam})|'
-            for x in sorted(scoreDict.keys()):
-                boxscore += '{0}|'.format(scoreDict[x][0])
-
-            boxscore += f'{awayTotal}|\n|[]({homeTeam})|'
-            for x in sorted(scoreDict.keys()):
-                boxscore += f'{scoreDict[x][1]}|'
-
-            boxscore += f'{homeTotal}|\n\n'
+            boxscore = construct_boxscore(away_team, data, home_team, period)
 
             # Team Stats
             print('Creating team stats...')
-            homeStats = data['liveData']['boxscore']['teams']['home']['teamStats']['teamSkaterStats']
-            awayStats = data['liveData']['boxscore']['teams']['away']['teamStats']['teamSkaterStats']
-            teamStats = '|Team|Shots|Hits|Blocked|FO Wins|Giveaways|Takeaways|Power ' \
-                        'Plays|\n|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|\n'
-            teamStats += f"|[]({awayTeam})|{awayStats['shots']}|{awayStats['hits']}|{awayStats['blocked']}" \
-                         f"|{awayStats['faceOffWinPercentage']}%|{awayStats['giveaways']}" \
-                         f"|{awayStats['takeaways']}|{str(int(awayStats['powerPlayGoals']))}" \
-                         f"/{str(int(awayStats['powerPlayOpportunities']))}|\n"
+            teamStats = construct_team_stats(away_team, data, home_team)
 
-            teamStats += f"|[]({homeTeam})|{homeStats['shots']}|{homeStats['hits']}|{homeStats['blocked']}" \
-                         f"|{homeStats['faceOffWinPercentage']}%|{homeStats['giveaways']}" \
-                         f"|{homeStats['takeaways']}|{str(int(homeStats['powerPlayGoals']))}" \
-                         f"/{str(int(homeStats['powerPlayOpportunities']))}|\n"
 
             # Goals
             print('Creating goal table...')
-            allPlays = data['liveData']['plays']['allPlays']
-            scoringPlays = data['liveData']['plays']['scoringPlays']
-
-            goalDict = {'1st': [], '2nd': [], '3rd': [], 'OT': []}
-
-            if (data['gameData']['game']['type'] in ['R', 'PR']) and (period == 5):
-                goalDict['SO'] = []
-            if (data['gameData']['game']['type'] == 'P') and (period > 4):
-                del goalDict['OT']
-                for x in range(0, (period - 4)):
-                    goalDict['OT' + str(x + 1)] = []
-
-            OT = 1
-            for x in scoringPlays:
-                goal = allPlays[x]
-                if (data['gameData']['game']['type'] == 'P') and ('OT' in goal['about']['ordinalNum']) and (
-                        period > 4):
-                    goalDict['OT' + str(OT)].append([goal['about']['periodTime'], teams[
-                        convert[goal['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
-                                                     goal['result']['strength']['name'],
-                                                     goal['result']['description'].replace(u'\xe9', 'e')])
-                    OT += 1
-                else:
-                    goalDict[goal['about']['ordinalNum']].append([goal['about']['periodTime'], teams[
-                        convert[goal['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
-                                                                  goal['result']['strength']['name'],
-                                                                  goal['result']['description'].replace(u'\xe9',
-                                                                                                        'e')])
-
-            goalTable = '|Period|Time|Team|Strength|Description|\n|:--:|:--:|:--:|:--:|:--:|\n'
-
-            # Reverse for GDT and forward for PGT
-            for x in sorted(goalDict.keys(), reverse=True):
-                for y in goalDict[x][::-1]:
-                    if x == 'SO':
-                        goalTable += f'|{x}|{y[0]}|[]({y[1]})|---|{y[3]}|\n'
-                    else:
-                        goalTable += f'|{x}|{y[0]}|[]({y[1]})|{y[2]}|{y[3]}|\n'
-
-            goalTable += '\n\n'
+            all_plays, goal_table = construct_goal_table(data, period)
 
             # Penalties
             print('Creating penalty table...')
-            penaltyPlays = data['liveData']['plays']['penaltyPlays']
-            penaltyDict = {'1st': [], '2nd': [], '3rd': [], 'OT': []}
+            penalty_table = construct_penalty_table(all_plays, data, period)
 
-            if (data['gameData']['game']['type'] == 'P') and (period > 4):
-                del penaltyDict['OT']
-                for x in range(0, (period - 4)):
-                    penaltyDict['OT' + str(x + 1)] = []
-
-            OT = 1
-            for x in penaltyPlays:
-                penalty = allPlays[x]
-                if (data['gameData']['game']['type'] == 'P') and ('OT' in penalty['about']['ordinalNum']) and (
-                        period > 4):
-                    penaltyDict['OT' + str(OT)].append([penalty['about']['periodTime'], teams[
-                        convert[penalty['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
-                                                        penalty['result']['penaltySeverity'],
-                                                        penalty['result']['penaltyMinutes'],
-                                                        penalty['result']['description'].replace(u'\xe9', 'e')])
-                else:
-                    penaltyDict[penalty['about']['ordinalNum']].append([penalty['about']['periodTime'], teams[
-                        convert[penalty['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
-                                                                        penalty['result']['penaltySeverity'],
-                                                                        penalty['result']['penaltyMinutes'],
-                                                                        penalty['result']['description'].replace(
-                                                                            u'\xe9', 'e')])
-
-            penaltyTable = '|Period|Time|Team|Type|Min|Description|\n|:--:|:--:|:-:|:--:|:--:|:--:|\n'
-            # Reverse for GDT and forward for PGT
-            for x in sorted(penaltyDict.keys(), reverse=True):
-                for y in penaltyDict[x][::-1]:
-                    penaltyTable += f'|{x}|{y[0]}|[]({y[1]})|{y[2]}|{y[3]}|{y[4]}|\n'
-
-            penaltyTable += '\n\n'
-
-            tables = f'***\n\n{timeTable}\n###Boxscore\n{boxscore}###Goals\n{goalTable}###Team Stats\n{teamStats}' \
-                     f'###Penalties\n{penaltyTable}***'
+            tables = f'***\n\n{time_table}\n###Boxscore\n{boxscore}###Goals\n{goal_table}###Team Stats\n{teamStats}' \
+                     f'###Penalties\n{penalty_table}***'
 
             now = datetime.now()
             print(now.strftime('%I:%M%p') + ' - Updating thread...')
@@ -471,3 +331,152 @@ def update_gdt(game):
         else:
             print('Sleeping...\n\n')
             return
+
+
+def create_time_clock(game, ordinal, _time):
+    game.game_info['time'] = f'{ordinal} {_time}'
+    print('Creating time table...')
+    if _time == 'Final':
+        timeTable = '|Time Clock|\n|:--:|\n|FINAL|\n\n'
+    else:
+        timeTable = f'|Time Clock|\n|:--:|\n|{ordinal} - {_time}|\n\n'
+    return timeTable
+
+
+def construct_boxscore(away_team, data, home_team, period):
+    boxscore = '|Teams|1st|2nd|3rd|'
+    if data['gameData']['game']['type'] in ['R', 'PR']:
+        if period == 4:
+            boxscore += 'OT|Total|\n|:--:|:--:|:--:|:--:|:--:|:--:|\n'
+        elif period == 5:
+            boxscore += 'OT|SO|Total|\n|:--:|:--:|:--:|:--:|:--:|:--:|:--:|\n'
+        else:
+            boxscore += 'Total|\n|:--:|:--:|:--:|:--:|:--:|\n'
+    elif data['gameData']['game']['type'] == 'P':
+        for x in range(0, (period - 3)):
+            boxscore += f'OT{x + 1}|'
+        boxscore += 'Total|\n|:--:|:--:|:--:|:--:|'
+        for x in range(0, period - 3):
+            boxscore += ':--:|'
+        boxscore += ':--:|\n'
+    homeTotal = data['liveData']['linescore']['teams']['home']['goals']
+    awayTotal = data['liveData']['linescore']['teams']['away']['goals']
+    scoreDict = {}
+    OT = 1
+    for x in data['liveData']['linescore']['periods']:
+        score = [x['away']['goals'], x['home']['goals']]
+        if (data['gameData']['game']['type'] == 'P') and ('OT' in x['ordinalNum']) and (period > 4):
+            scoreDict['OT' + str(OT)] = score
+            OT += 1
+        else:
+            scoreDict[x['ordinalNum']] = score
+    if period == 1:
+        scoreDict['2nd'] = ['--', '--']
+        scoreDict['3rd'] = ['--', '--']
+    elif period == 2:
+        scoreDict['3rd'] = ['--', '--']
+    if data['liveData']['linescore']['hasShootout']:
+        awaySO = data['liveData']['linescore']['shootoutInfo']['away']['scores']
+        homeSO = data['liveData']['linescore']['shootoutInfo']['home']['scores']
+        if awaySO > homeSO:
+            scoreDict['SO'] = [1, 0]
+        else:
+            scoreDict['SO'] = [0, 1]
+    boxscore += f'|[]({away_team})|'
+    for x in sorted(scoreDict.keys()):
+        boxscore += '{0}|'.format(scoreDict[x][0])
+    boxscore += f'{awayTotal}|\n|[]({home_team})|'
+    for x in sorted(scoreDict.keys()):
+        boxscore += f'{scoreDict[x][1]}|'
+    boxscore += f'{homeTotal}|\n\n'
+    return boxscore
+
+
+def construct_goal_table(data, period):
+    allPlays = data['liveData']['plays']['allPlays']
+    scoringPlays = data['liveData']['plays']['scoringPlays']
+    goalDict = {'1st': [], '2nd': [], '3rd': [], 'OT': []}
+    if (data['gameData']['game']['type'] in ['R', 'PR']) and (period == 5):
+        goalDict['SO'] = []
+    if (data['gameData']['game']['type'] == 'P') and (period > 4):
+        del goalDict['OT']
+        for x in range(0, (period - 4)):
+            goalDict['OT' + str(x + 1)] = []
+    OT = 1
+    for x in scoringPlays:
+        goal = allPlays[x]
+        if (data['gameData']['game']['type'] == 'P') and ('OT' in goal['about']['ordinalNum']) and (
+                period > 4):
+            goalDict['OT' + str(OT)].append([goal['about']['periodTime'], teams[
+                convert[goal['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
+                                             goal['result']['strength']['name'],
+                                             goal['result']['description'].replace(u'\xe9', 'e')])
+            OT += 1
+        else:
+            goalDict[goal['about']['ordinalNum']].append([goal['about']['periodTime'], teams[
+                convert[goal['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
+                                                          goal['result']['strength']['name'],
+                                                          goal['result']['description'].replace(u'\xe9',
+                                                                                                'e')])
+    goalTable = '|Period|Time|Team|Strength|Description|\n' \
+                '|:--:|:--:|:--:|:--:|:--:|\n'
+    # Reverse for GDT and forward for PGT
+    for x in sorted(goalDict.keys(), reverse=True):
+        for y in goalDict[x][::-1]:
+            if x == 'SO':
+                goalTable += f'|{x}|{y[0]}|[]({y[1]})|---|{y[3]}|\n'
+            else:
+                goalTable += f'|{x}|{y[0]}|[]({y[1]})|{y[2]}|{y[3]}|\n'
+    goalTable += '\n\n'
+    return allPlays, goalTable
+
+
+def construct_team_stats(away_team, data, home_team):
+    homeStats = data['liveData']['boxscore']['teams']['home']['teamStats']['teamSkaterStats']
+    awayStats = data['liveData']['boxscore']['teams']['away']['teamStats']['teamSkaterStats']
+    teamStats = '|Team|Shots|Hits|Blocked|FO Wins|Giveaways|Takeaways|Power Plays|\n' \
+                '|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|\n' \
+                f"|[]({away_team})|{awayStats['shots']}|{awayStats['hits']}|{awayStats['blocked']}" \
+                f"|{awayStats['faceOffWinPercentage']}%|{awayStats['giveaways']}" \
+                f"|{awayStats['takeaways']}|{str(int(awayStats['powerPlayGoals']))}" \
+                f"/{str(int(awayStats['powerPlayOpportunities']))}|\n" \
+                f"|[]({home_team})|{homeStats['shots']}|{homeStats['hits']}|{homeStats['blocked']}" \
+                f"|{homeStats['faceOffWinPercentage']}%|{homeStats['giveaways']}" \
+                f"|{homeStats['takeaways']}|{str(int(homeStats['powerPlayGoals']))}" \
+                f"/{str(int(homeStats['powerPlayOpportunities']))}|\n"
+    return teamStats
+
+
+def construct_penalty_table(all_plays, data, period):
+    penaltyPlays = data['liveData']['plays']['penaltyPlays']
+    penaltyDict = {'1st': [], '2nd': [], '3rd': [], 'OT': []}
+    if (data['gameData']['game']['type'] == 'P') and (period > 4):
+        del penaltyDict['OT']
+        for x in range(0, (period - 4)):
+            penaltyDict['OT' + str(x + 1)] = []
+    OT = 1
+    for x in penaltyPlays:
+        penalty = all_plays[x]
+        if (data['gameData']['game']['type'] == 'P') and ('OT' in penalty['about']['ordinalNum']) and (
+                period > 4):
+            penaltyDict['OT' + str(OT)].append([penalty['about']['periodTime'], teams[
+                convert[penalty['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
+                                                penalty['result']['penaltySeverity'],
+                                                penalty['result']['penaltyMinutes'],
+                                                penalty['result']['description'].replace(u'\xe9', 'e')])
+        else:
+            penaltyDict[penalty['about']['ordinalNum']].append([penalty['about']['periodTime'], teams[
+                convert[penalty['team']['name'].replace(u'\xe9', 'e').replace('.', '')]][0],
+                                                                penalty['result']['penaltySeverity'],
+                                                                penalty['result']['penaltyMinutes'],
+                                                                penalty['result']['description'].replace(
+                                                                    u'\xe9', 'e')])
+    penaltyTable = '|Period|Time|Team|Type|Min|Description|\n' \
+                   '|:--:|:--:|:-:|:--:|:--:|:--:|\n'
+    # Reverse for GDT and forward for PGT
+    for x in sorted(penaltyDict.keys(), reverse=True):
+        for y in penaltyDict[x][::-1]:
+            penaltyTable += f'|{x}|{y[0]}|[]({y[1]})|{y[2]}|{y[3]}|{y[4]}|\n'
+    penaltyTable += '\n\n'
+    return penaltyTable
+
