@@ -119,14 +119,8 @@ def generate_markdown_for_gdt(game):
 
 def construct_title(away_team_info, away_team_stats, home_team_info, home_team_stats, home_team_time):
     title = f"Game Day Thread: " \
-            f"{away_team_info['name']} " \
-            f"({away_team_stats[0]['splits'][0]['stat']['wins']}-" \
-            f"{away_team_stats[0]['splits'][0]['stat']['losses']}-" \
-            f"{away_team_stats[0]['splits'][0]['stat']['ot']}) at " \
-            f"{home_team_info['name']} " \
-            f"({home_team_stats[0]['splits'][0]['stat']['wins']}-" \
-            f"{home_team_stats[0]['splits'][0]['stat']['losses']}-" \
-            f"{home_team_stats[0]['splits'][0]['stat']['ot']}) - " \
+            f"{away_team_info['name']} at " \
+            f"{home_team_info['name']} - " \
             f"{home_team_time:%d %b %Y - %I:%M%p} {home_team_info['venue']['timeZone']['tz']}"
     if args.title:
         title += f' - {args.title}'
