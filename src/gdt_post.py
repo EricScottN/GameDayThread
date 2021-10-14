@@ -64,7 +64,7 @@ def find_gdt(team_name):
 
 
 def can_post(game):
-    pretime = timedelta(hours=2)
+    pretime = timedelta(hours=1.5)
     gametime_ordinal = datetime.fromisoformat(game['gameDate'][:-1]) - datetime.now().utcnow()
     if gametime_ordinal.total_seconds() <= 0:
         return False
@@ -73,6 +73,7 @@ def can_post(game):
         hour, min = divmod(min, 60)
         print(f'Sleeping for {hour} hours {min} minutes until able to post')
         time.sleep((gametime_ordinal - pretime).seconds)
+        gametime_ordinal = datetime.fromisoformat(game['gameDate'][:-1]) - datetime.now().utcnow()
     else:
         return True
 
