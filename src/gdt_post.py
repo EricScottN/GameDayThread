@@ -322,6 +322,11 @@ def update_gdt(game):
             # Penalties
             print('Creating penalty table...')
             all_text.append(construct_penalty_table(all_plays, data, period))
+
+            print('Creating highlights table')
+            all_text.append(construct_highlights(game))
+
+            # Produce second split
             all_text.append(construct_split())
 
             now = datetime.now()
@@ -489,4 +494,29 @@ def construct_penalty_table(all_plays, data, period):
             penalty_table += f'|{x}|{y[0]}|[]({y[1]})|{y[2]}|{y[3]}|{y[4]}|\n'
     penalty_table += '\n\n'
     return penalty_table
+
+
+def construct_highlights(game):
+    game.get_game_content()
+    game_content = game.game_content
+    highlights = game_content['highlights']['scoreboard']['items']
+    highlights_table = f'##Highlights\n'
+    if highlights:
+        highlights_table += f'||\n' \
+                           f'|:--:|\n'
+        for highlight in highlights:
+            description = highlight['description']
+            if description not in game.highlights:
+                playbacks = highlight['playbacks']
+                for item in playbacks:
+                    if item['name'] == 'FLASH_1800K_896x504':
+                        url = item['url']
+                        game.highlights[description] = url
+        for desc, link in game.highlights.items():
+            highlights_table += f"|[{desc}]({link})|\n"
+    else:
+        highlights_table += f'|No Highlights|\n' \
+                            f'|:--:|\n'
+    return highlights_table
+
 
