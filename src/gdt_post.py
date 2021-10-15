@@ -1,3 +1,4 @@
+import os
 import json
 from datetime import datetime, timedelta
 import time
@@ -11,7 +12,10 @@ eastern = pytz.timezone('US/Eastern')
 
 r = Reddit().reddit
 user = r.redditor(r.user.me().name)
-subreddit = r.subreddit(get_env('SUBREDDIT'))
+if args.subreddit:
+    subreddit = r.subreddit(args.subreddit)
+else:
+    subreddit = r.subreddit(get_env('SUBREDDIT'))
 
 teams = {'SEA': ['/r/seattlekraken', 'Seattle', 'Kraken'],
          'VGK': ['/r/goldenknights', 'Vegas', 'Golden Knights'],
@@ -83,6 +87,8 @@ def can_post(game):
 
 
 def save_markdown(all_text, file_name):
+    if not os.path.isdir("./log/"):
+        os.makedirs("./log/")
     text_file = open(f"./log/{file_name}.txt", "w")
     for element in all_text:
         text_file.write(element + "\n")
