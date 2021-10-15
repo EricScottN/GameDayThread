@@ -2,9 +2,6 @@ from datetime import datetime
 import pytz
 import json
 import requests
-from requests_html import HTMLSession
-from bs4 import BeautifulSoup
-import unidecode
 from src.team import TeamInfo
 
 class NoGamesFoundError(Exception):

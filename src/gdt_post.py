@@ -221,7 +221,7 @@ def generate_markdown_for_gdt(game):
         sub_table = f'##Subscribe\n' \
                     f'|Team Subreddits|\n' \
                     f'|:--:|:--:|\n' \
-                    f"|{teams[away_team_info['abbreviation']][0]} {teams[home_team_info['abbreviation']][0]}\n" \
+                    f"|{teams[away_team_info['abbreviation']][0]} **:** {teams[home_team_info['abbreviation']][0]}\n" \
                     f'|[RedditHockey Discord](https://discord.gg/reddithockey)|'
 
         return sub_table
