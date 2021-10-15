@@ -468,35 +468,27 @@ def update_gdt(game):
             all_text = []
             all_text.append(construct_split())
             all_text.append(create_time_clock())
-
             home_team = teams[data['gameData']['teams']['home']['abbreviation']][0]
             away_team = teams[data['gameData']['teams']['away']['abbreviation']][0]
-
             print('Creating boxscore...')
             all_text.append(construct_boxscore())
-
             # Team Stats
             print('Creating team stats...')
             all_text.append(construct_team_stats())
-
-
             # Goals
             print('Creating goal table...')
             all_plays, goal_table = (construct_goal_table())
             all_text.append(goal_table)
-
             # Penalties
             print('Creating penalty table...')
             all_text.append(construct_penalty_table())
-
+            # Highlights
             print('Creating highlights table')
             all_text.append(construct_highlights())
-
             # Produce second split
             all_text.append(construct_split())
-
+            # Save markdown
             save_markdown(all_text, 'last_update_markdown')
-
             now = datetime.now()
             print(now.strftime('%I:%M%p') + ' - Updating thread...')
             op = game.gdt_post.selftext.split('***')
