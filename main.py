@@ -2,14 +2,14 @@ from src.team import get_all_teams, TeamInfo
 from src.game import get_today_games, GameInfo
 from src.gdt_post import find_gdt, can_post, generate_markdown_for_gdt, update_gdt, post_gdt, comment_all_tables, \
                          update_gdt_with_comment
-from src.setup import get_env, args
+from src.setup import args
 import time
 
 
 def main():
     teams = get_all_teams()
     today_games = get_today_games()
-    team = TeamInfo.get_team_by_abbv(get_env('MY_TEAM'), teams)
+    team = TeamInfo.get_team_by_abbv(args.team_override, teams)
     game = GameInfo.create_with_games_and_team(today_games, team.team_info)
     game.gdt_post = find_gdt(team.team_info['name'])
     if not game.gdt_post:

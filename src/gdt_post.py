@@ -5,17 +5,14 @@ import time
 import pytz
 import requests
 import html
-from src.setup import Reddit, get_env, args
+from src.setup import Reddit, args
 
 utc = pytz.timezone('UTC')
 eastern = pytz.timezone('US/Eastern')
 
 r = Reddit().reddit
 user = r.redditor(r.user.me().name)
-if args.subreddit:
-    subreddit = r.subreddit(args.subreddit)
-else:
-    subreddit = r.subreddit(get_env('SUBREDDIT'))
+subreddit = args.subreddit
 
 teams = {'SEA': ['/r/seattlekraken', 'Seattle', 'Kraken'],
          'VGK': ['/r/goldenknights', 'Vegas', 'Golden Knights'],
