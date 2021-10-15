@@ -9,7 +9,7 @@ import time
 def main():
     teams = get_all_teams()
     today_games = get_today_games()
-    team = TeamInfo.get_team_by_abbv(args.team_override, teams)
+    team = TeamInfo.get_team_by_abbv(args.team, teams)
     game = GameInfo.create_with_games_and_team(today_games, team.team_info)
     game.gdt_post = find_gdt(team.team_info['name'])
     if not game.gdt_post:
