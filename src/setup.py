@@ -9,6 +9,8 @@ load_dotenv()
 
 def get_env(var):
     result = os.getenv(var, None)
+    if result is None:
+        raise KeyError(f"")
     return result
 
 
@@ -21,9 +23,9 @@ def check_team_length(team):
 parser = argparse.ArgumentParser()
 parser.add_argument("-po", "--post_override", type=bool, default=False,
                     help='Forces script to create post if team is found')
-parser.add_argument("-so", "--subreddit", type=str, default=get_env('SUBREDDIT'),
+parser.add_argument("-s", "--subreddit", type=str, default=get_env('SUBREDDIT'), choices=['hockey', 'hockeygtt'],
                     help='Override subreddit - defaults to SUBREDDIT in .env file')
-parser.add_argument("-to", "--team_override", type=check_team_length, default=get_env('MY_TEAM'),
+parser.add_argument("-t", "--team", type=check_team_length, default=get_env('MY_TEAM'),
                     help='Override team selection - defaults to MY_TEAM in .env file')
 parser.add_argument("-tl", "--title", type=str,
                     help='Append a message to gdt reddit post title')
