@@ -12,7 +12,7 @@ eastern = pytz.timezone('US/Eastern')
 
 r = Reddit().reddit
 user = r.redditor(r.user.me().name)
-subreddit = r.args.subreddit
+subreddit = r.subreddit(args.subreddit)
 
 teams = {'SEA': ['/r/seattlekraken', 'Seattle', 'Kraken'],
          'VGK': ['/r/goldenknights', 'Vegas', 'Golden Knights'],
