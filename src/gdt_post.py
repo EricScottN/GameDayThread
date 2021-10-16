@@ -12,7 +12,7 @@ eastern = pytz.timezone('US/Eastern')
 
 r = Reddit().reddit
 user = r.redditor(r.user.me().name)
-subreddit = args.subreddit
+subreddit = r.args.subreddit
 
 teams = {'SEA': ['/r/seattlekraken', 'Seattle', 'Kraken'],
          'VGK': ['/r/goldenknights', 'Vegas', 'Golden Knights'],
@@ -221,7 +221,7 @@ def generate_markdown_for_gdt(game):
         sub_table = f'##Subscribe\n' \
                     f'|Team Subreddits|\n' \
                     f'|:--:|:--:|\n' \
-                    f"|{teams[away_team_info['abbreviation']][0]} **:** {teams[home_team_info['abbreviation']][0]}\n" \
+                    f"|{teams[away_team_info['abbreviation']][0]}  {teams[home_team_info['abbreviation']][0]}\n" \
                     f'|[RedditHockey Discord](https://discord.gg/reddithockey)|'
 
         return sub_table
