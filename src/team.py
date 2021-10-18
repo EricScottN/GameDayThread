@@ -59,15 +59,22 @@ class TeamInfo:
         else:
             raise AttributeError("Please spcify 'away' or 'home'")
 
+
     def get_team_stats_by_team_id(self):
         url = f"https://statsapi.web.nhl.com/api/v1/teams/{self.team_info['id']}/stats"
         w = requests.get(url)
         team_stats = json.loads(w.content)['stats']
         w.close()
-        if not team_stats:
+        stat = team_stats[0]['splits'][0]['stat']
+        rank = team_stats[1]['splits'][0]['stat']
+        result = {}
+        for k in stat.keys():
+            if k not in result and k in rank:
+                result[k] = {'stat': stat[k], 'rank': rank[k]}
+        if not team_stats or not result:
             raise Exception(f'Unable to get team stats from {url}')
         else:
-            self.team_stats = team_stats
+            self.team_stats = result
 
     def scrape_lineups(self):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0'}
