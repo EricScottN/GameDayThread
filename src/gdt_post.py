@@ -78,6 +78,7 @@ def can_post(game):
         hour, min = divmod(min, 60)
         print(f'Sleeping for {hour} hours {min} minutes until able to post')
         time.sleep((gametime_ordinal - pretime).seconds)
+        time.sleep(61)
         gametime_ordinal = datetime.fromisoformat(game['gameDate'][:-1]) - datetime.now().utcnow()
     else:
         return True
