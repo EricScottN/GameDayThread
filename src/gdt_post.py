@@ -111,6 +111,10 @@ def generate_markdown_for_gdt(game):
     pt_time = utc_time.astimezone(pytz.timezone('US/Pacific'))
     home_team_time = utc_time.astimezone(pytz.timezone(home_team_info['venue']['timeZone']['id']))
     all_text = []
+    stats_map = {'wins': 'W', 'losses': 'L', 'pts': 'P', 'ptPctg': 'P%', 'goalsPerGame': 'GF/GP',
+                 'goalsAgainstPerGame': 'GA/GP', 'powerPlayPercentage': 'PP%', 'powerPlayOpportunities': 'PPO',
+                 'penaltyKillPercentage': 'PK%', 'shotsPerGame': 'S/GP', 'shotsAllowed': 'SA/GP',
+                 'faceOffWinPercentage': 'FOW%'}
 
     def construct_title():
         title = f"Game Day Thread: " \
@@ -124,13 +128,13 @@ def generate_markdown_for_gdt(game):
 
     def construct_header():
         header = f"#{away_team_info['name']} []({teams[away_team_info['abbreviation']][0]})" \
-                 f"({away_team_stats[0]['splits'][0]['stat']['wins']}-" \
-                 f"{away_team_stats[0]['splits'][0]['stat']['losses']}-" \
-                 f"{away_team_stats[0]['splits'][0]['stat']['ot']}) at " \
+                 f"({away_team_stats['wins']['stat']}-" \
+                 f"{away_team_stats['losses']['stat']}-" \
+                 f"{away_team_stats['ot']['stat']}) at " \
                  f"{home_team_info['name']} []({teams[home_team_info['abbreviation']][0]})" \
-                 f"({home_team_stats[0]['splits'][0]['stat']['wins']}-" \
-                 f"{home_team_stats[0]['splits'][0]['stat']['losses']}-" \
-                 f"{home_team_stats[0]['splits'][0]['stat']['ot']})"
+                 f"({home_team_stats['wins']['stat']}-" \
+                 f"{home_team_stats['losses']['stat']}-" \
+                 f"{home_team_stats['ot']['stat']})"
 
         return header
 
@@ -217,6 +221,44 @@ def generate_markdown_for_gdt(game):
 
         return injury_table
 
+    def construct_team_stats():
+        team_stats = f"##Team Stat Comparison\n||"
+        all_stats = [*away_team_stats]
+        stats = []
+        for stat in all_stats:
+            if stat in stats_map:
+                team_stats += f'{stats_map[stat]}|'
+                stats.append(stat)
+        team_stats += '\n|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|\n'
+
+        away_stats = f"|[]({teams[away_team_info['abbreviation']][0]}) {away_team_info['abbreviation']} - Value|"
+        away_rank = f"|[]({teams[away_team_info['abbreviation']][0]}) {away_team_info['abbreviation']} - Rank|"
+        advantage = f"|Advantage|"
+        home_rank = f"|[]({teams[home_team_info['abbreviation']][0]}) {home_team_info['abbreviation']} - Rank|"
+        home_stats = f"|[]({teams[home_team_info['abbreviation']][0]}) {home_team_info['abbreviation']} - Value|"
+
+        for (a_k, a_v), (h_k, h_v) in zip(away_team_stats.items(), home_team_stats.items()):
+            if a_k in stats and h_k in stats:
+                away_rank_num = ''.join([char for char in a_v['rank'] if char.isdigit()])
+                home_rank_num = ''.join([char for char in h_v['rank'] if char.isdigit()])
+                away_stats += f"{a_v['stat']}|"
+                away_rank += f"{a_v['rank']}|"
+                if float(a_v['stat']) == float(h_v['stat']):
+                    advantage += f"---|"
+                elif int(away_rank_num) < int(home_rank_num):
+                    advantage += f"[]({teams[away_team_info['abbreviation']][0]}) {away_team_info['abbreviation']}|"
+                elif int(away_rank_num) > int(home_rank_num):
+                    advantage += f"[]({teams[home_team_info['abbreviation']][0]}) {home_team_info['abbreviation']}|"
+                else:
+                    advantage += f"---|"
+                home_rank += f"{h_v['rank']}|"
+                home_stats += f"{h_v['stat']}|"
+
+        strings = [away_stats, away_rank, advantage, home_rank, home_stats]
+
+        team_stats += '\n'.join([string for string in strings])
+        return team_stats
+
     def construct_sub_table():
         sub_table = f'##Subscribe\n' \
                     f'|Team Subreddits|\n' \
@@ -241,6 +283,7 @@ def generate_markdown_for_gdt(game):
     all_text.append(construct_venue_table())
     all_text.append(construct_lineup_table())
     all_text.append(construct_injuries_table())
+    all_text.append(construct_team_stats())
     all_text.append(construct_split())
     all_text.append(construct_sub_table())
     all_text.append(construct_notes())
