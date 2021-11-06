@@ -112,7 +112,14 @@ class TeamInfo:
         url = f'https://www.tsn.ca/nhl/team/{team_link}/injuries'
         session = HTMLSession()
         r = session.get(url)
-        r.html.render(timeout=60)
+        for i in range(0, 10):
+            while True:
+                try:
+                    r.html.render(timeout=60)
+                except Exception as e:
+                    print(e)
+                    continue
+                break
         soup = BeautifulSoup(r.html.raw_html, "html.parser")
         try:
             soup_injuries = soup.find("div", {"class": "nfl-team-injuries"})
