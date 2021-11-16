@@ -504,7 +504,7 @@ def update_gdt(game):
                                 f'|:--:|\n'
         return highlights_table
 
-    if period == 0 or not _time:
+    if period == 0 or game.game_info['status']['abstractGameState'] == 'Preview':
         print('No updates')
     else:
         _time = data['liveData']['linescore']['currentPeriodTimeRemaining']
